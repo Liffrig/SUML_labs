@@ -59,15 +59,23 @@ st.markdown(f"**{dzien.capitalize()}, {today.day} {miesiac} {today.year}. Bonven
 st.divider()
 
 # --- Modele tłumaczenia ---
+MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
+
+def _model_path(folder):
+    local = os.path.join(MODELS_DIR, folder)
+    if os.path.isdir(local):
+        return local
+    return f"Helsinki-NLP/opus-mt-{folder}"
+
 @st.cache_resource(show_spinner="Wczytuję model PL → EN...")
 def load_pl_en():
-    name = "Helsinki-NLP/opus-mt-pl-en"
-    return MarianTokenizer.from_pretrained(name), MarianMTModel.from_pretrained(name)
+    path = _model_path("pl-en")
+    return MarianTokenizer.from_pretrained(path), MarianMTModel.from_pretrained(path)
 
 @st.cache_resource(show_spinner="Wczytuję model EN → EO...")
 def load_en_eo():
-    name = "Helsinki-NLP/opus-mt-en-eo"
-    return MarianTokenizer.from_pretrained(name), MarianMTModel.from_pretrained(name)
+    path = _model_path("en-eo")
+    return MarianTokenizer.from_pretrained(path), MarianMTModel.from_pretrained(path)
 
 HISTORY_PATH = os.path.join(os.path.dirname(__file__), "translations.txt")
 
