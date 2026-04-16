@@ -1,0 +1,3 @@
+2026-04-16 13:55	PL: Jestem Michał. Jestem studentem.	EO: Mi estas Michael, mi estas studento.
+2026-04-16 13:58	PL: To jest bardzo długi tekst. Ma ponad 20 słów, ale staramy się nie przekroczyć limitu 25 słów.	EO: Tio estas tre longa teksto. Ĝi entenas pli ol 20 vortojn, sed ni ne provas supermeti la limon de 25 vortoj.
+2026-04-16 13:59	PL: Żył kiedyś, w mieście Gnieźnie, co oznacza gniazdo w lokalnym języku, książę imieniem Popiel. Miał dwóch synów.	EO: Iam li vivis en la urbo Gnizino, kiu signifas neston en la loka lingvo, princo nomata Popiel. Li havis du filojn.
