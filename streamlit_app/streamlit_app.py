@@ -1,4 +1,5 @@
 import os
+import json
 import datetime
 import streamlit as st
 from transformers import MarianMTModel, MarianTokenizer
@@ -101,7 +102,12 @@ load_pl_en()
 load_en_eo()
 
 # --- Interfejs tłumaczenia ---
-with st.form("translation_form", enter_to_submit=False):
+if "form_key" not in st.session_state:
+    st.session_state.form_key = 0
+if "result" not in st.session_state:
+    st.session_state.result = None
+
+with st.form(f"translation_form_{st.session_state.form_key}", enter_to_submit=False):
     text = st.text_area(
         "Tekst w języku polskim:",
         placeholder="Wpisz tekst do przetłumaczenia...",
@@ -124,16 +130,43 @@ if submitted and (text or "").strip():
                 eo_text = translate(en_text, tok_en_eo, mdl_en_eo)
 
             save_translation(text, eo_text)
-
-            st.success("Tłumaczenie zakończone!")
-            st.subheader("Wynik (Esperanto):")
-            st.markdown(f"> {eo_text}")
-
-            with st.expander("Pokaż pośrednie tłumaczenie (angielski)"):
-                st.write(en_text)
+            st.session_state.result = {"eo": eo_text, "en": en_text}
+            st.session_state.form_key += 1
+            st.rerun()
 
         except Exception as e:
             st.error(f"Wystąpił błąd podczas tłumaczenia: {e}")
+
+if st.session_state.result:
+    eo_text = st.session_state.result["eo"]
+    en_text = st.session_state.result["en"]
+
+    st.success("Tłumaczenie zakończone!")
+    st.subheader("Wynik (Esperanto):")
+    st.markdown(f"""
+    <div style="
+        border: 2px solid #4a7a4a;
+        border-radius: 10px;
+        padding: 24px;
+        text-align: center;
+        font-size: 20px;
+        color: #e8f5e8;
+        background-color: #2a4a2a;
+        margin: 10px 0 16px 0;
+    ">{eo_text}</div>
+    """, unsafe_allow_html=True)
+
+    safe_text = json.dumps(eo_text)
+    st.markdown(f"""
+    <button onclick="navigator.clipboard.writeText({safe_text})"
+        style="background-color:#3a6a3a; color:#e8f5e8; border:1px solid #4a7a4a;
+               border-radius:6px; padding:6px 16px; cursor:pointer; font-size:14px;">
+        📋 Kopiuj
+    </button>
+    """, unsafe_allow_html=True)
+
+    with st.expander("Pokaż pośrednie tłumaczenie (angielski)"):
+        st.write(en_text)
 
 st.divider()
 
