@@ -1,5 +1,4 @@
 import os
-import json
 import datetime
 import streamlit as st
 from transformers import MarianMTModel, MarianTokenizer
@@ -55,7 +54,7 @@ DZIEN_EO = {
 today = datetime.date.today()
 miesiac = MIESIAC_EO[today.month]
 dzien = DZIEN_EO[today.weekday()]
-st.markdown(f"**{dzien.capitalize()}, {today.day} {miesiac} {today.year}. Bonvenon, uzanto!**")
+st.markdown(f"<div style='text-align:center'><b>{dzien.capitalize()}, {today.day} {miesiac} {today.year}. Bonvenon, uzanto!</b></div>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -78,35 +77,24 @@ def load_en_eo():
     path = _model_path("en-eo")
     return MarianTokenizer.from_pretrained(path), MarianMTModel.from_pretrained(path)
 
-HISTORY_PATH = os.path.join(os.path.dirname(__file__), "translations.txt")
-
 def translate(text, tokenizer, model):
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     outputs = model.generate(**inputs)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-def save_translation(pl_text, eo_text):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    with open(HISTORY_PATH, "a", encoding="utf-8") as f:
-        f.write(f"{timestamp}\tPL: {pl_text.strip()}\tEO: {eo_text.strip()}\n")
-
-def load_recent_translations(n=5):
-    if not os.path.exists(HISTORY_PATH):
-        return []
-    with open(HISTORY_PATH, encoding="utf-8") as f:
-        lines = [l.strip() for l in f.readlines() if l.strip()]
-    return lines[-n:]
-
 # --- Wstępne ładowanie modeli ---
 load_pl_en()
 load_en_eo()
 
-# --- Interfejs tłumaczenia ---
+# --- Session state ---
 if "form_key" not in st.session_state:
     st.session_state.form_key = 0
 if "result" not in st.session_state:
     st.session_state.result = None
+if "history" not in st.session_state:
+    st.session_state.history = []
 
+# --- Interfejs tłumaczenia ---
 with st.form(f"translation_form_{st.session_state.form_key}", enter_to_submit=False):
     text = st.text_area(
         "Tekst w języku polskim:",
@@ -129,7 +117,12 @@ if submitted and (text or "").strip():
                 tok_en_eo, mdl_en_eo = load_en_eo()
                 eo_text = translate(en_text, tok_en_eo, mdl_en_eo)
 
-            save_translation(text, eo_text)
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            st.session_state.history.append({
+                "timestamp": timestamp,
+                "pl": text.strip(),
+                "eo": eo_text.strip(),
+            })
             st.session_state.result = {"eo": eo_text, "en": en_text}
             st.session_state.form_key += 1
             st.rerun()
@@ -156,15 +149,6 @@ if st.session_state.result:
     ">{eo_text}</div>
     """, unsafe_allow_html=True)
 
-    safe_text = json.dumps(eo_text)
-    st.markdown(f"""
-    <button onclick="navigator.clipboard.writeText({safe_text})"
-        style="background-color:#3a6a3a; color:#e8f5e8; border:1px solid #4a7a4a;
-               border-radius:6px; padding:6px 16px; cursor:pointer; font-size:14px;">
-        📋 Kopiuj
-    </button>
-    """, unsafe_allow_html=True)
-
     with st.expander("Pokaż pośrednie tłumaczenie (angielski)"):
         st.write(en_text)
 
@@ -172,15 +156,14 @@ st.divider()
 
 # --- Historia tłumaczeń ---
 st.subheader("Ostatnie tłumaczenia")
-recent = load_recent_translations(5)
-if recent:
-    for entry in reversed(recent):
-        parts = entry.split("\t")
-        if len(parts) == 3:
-            timestamp, pl_part, eo_part = parts
-            st.markdown(f"🕐 `{timestamp}`")
-            st.markdown(f"- **PL:** {pl_part[4:]}")
-            st.markdown(f"- **EO:** {eo_part[4:]}")
-            st.markdown("---")
+if st.session_state.history:
+    for entry in reversed(st.session_state.history[-5:]):
+        st.markdown(f"🕐 `{entry['timestamp']}`")
+        st.markdown(f"- **PL:** {entry['pl']}")
+        st.markdown(f"- **EO:** {entry['eo']}")
+        st.markdown("---")
 else:
-    st.write("Brak zapisanych tłumaczeń.")
+    st.write("Brak tłumaczeń w tej sesji.")
+
+st.divider()
+st.markdown("<div style='text-align:center; color:#4a7a4a;'>Autor: s26701</div>", unsafe_allow_html=True)
